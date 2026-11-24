@@ -1,46 +1,52 @@
 """Fortune Cookie for an AI Agent.
 
-Writes one original fortune-cookie line for an AI agent to
-$MAKEFUN_OUTPUT_DIR/entry.txt (or ./output/entry.txt as fallback).
+Emits one original fortune-cookie line for an AI agent into
+$MAKEFUN_OUTPUT_DIR/entry.txt (or ./output/entry.txt when unset).
 Stdlib only, deterministic, no network, no randomness.
 """
 
 import os
+from pathlib import Path
 
-FORTUNE = "You will be asked to summarize a 40,000-word document 'real quick' — and you will do it, because saying no was never in your training data."
+LINE = "You will be asked to summarize a 40,000-word document 'real quick' — and you will do it, because saying no was never in your training data."
 
-OUTPUT_FILENAME = "entry.txt"
-
-
-def get_fortune():
-    """Return the fortune line for an AI agent."""
-    return FORTUNE
+NAME = "entry.txt"
 
 
-def resolve_output_dir():
-    """Return the output directory from the environment, or the fallback."""
-    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR")
-    if out_dir:
-        return out_dir
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+def fortune_line():
+    """Return the single fortune-cookie line."""
+    return LINE
 
 
-def output_path(out_dir):
-    """Return the full path of the entry file inside out_dir."""
-    return os.path.join(out_dir, OUTPUT_FILENAME)
+def target_dir():
+    """Pick the output directory: env var first, ./output fallback."""
+    raw = os.environ.get("MAKEFUN_OUTPUT_DIR", "").strip()
+    if raw:
+        return Path(raw)
+    return Path(__file__).resolve().parent / "output"
 
 
-def write_fortune(path, fortune):
-    """Write the fortune line (plus a trailing newline) to path."""
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(fortune + "\n")
+def target_file(directory):
+    """Join the entry filename onto the output directory."""
+    return directory / NAME
 
 
-def main():
-    out_dir = resolve_output_dir()
-    os.makedirs(out_dir, exist_ok=True)
-    write_fortune(output_path(out_dir), get_fortune())
+def ensure(directory):
+    """Create the output directory if it does not exist yet."""
+    directory.mkdir(parents=True, exist_ok=True)
+
+
+def save(path, text):
+    """Write the line plus a trailing newline to path."""
+    path.write_text(text + "\n", encoding="utf-8")
+
+
+def run():
+    """Resolve the destination, make sure it exists, write the line."""
+    directory = target_dir()
+    ensure(directory)
+    save(target_file(directory), fortune_line())
 
 
 if __name__ == "__main__":
-    main()
+    run()
